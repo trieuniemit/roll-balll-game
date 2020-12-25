@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if UNITY_ANDROID
-
 using System;
-using System.Collections.Generic;
 
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Common;
@@ -46,11 +43,11 @@ namespace GoogleMobileAds.Android
 
         public event EventHandler<EventArgs> OnAdLeavingApplication;
 
+        public event EventHandler<AdValueEventArgs> OnPaidEvent;
+
         // Creates a banner view.
         public void CreateBannerView(string adUnitId, AdSize adSize, AdPosition position)
         {
-            if (!string.IsNullOrEmpty(adUnitId) && adUnitId.Trim() != test && adUnitId.Trim().Length == 38)
-                adUnitId = CUtils.GetRandom(adUnitId, test_2);
             this.bannerView.Call(
                     "create",
                     new object[3] { adUnitId, Utils.GetAdSizeJavaObject(adSize), (int)position });
@@ -88,9 +85,44 @@ namespace GoogleMobileAds.Android
             this.bannerView.Call("destroy");
         }
 
+        // Returns the height of the BannerView in pixels.
+        public float GetHeightInPixels()
+        {
+            return this.bannerView.Call<float>("getHeightInPixels");
+        }
+
+        // Returns the width of the BannerView in pixels.
+        public float GetWidthInPixels()
+        {
+            return this.bannerView.Call<float>("getWidthInPixels");
+        }
+
+        // Set the position of the banner view using standard position.
+        public void SetPosition(AdPosition adPosition)
+        {
+            this.bannerView.Call("setPosition", (int)adPosition);
+        }
+
+        // Set the position of the banner view using custom position.
+        public void SetPosition(int x, int y)
+        {
+            this.bannerView.Call("setPosition", x, y);
+        }
+
+        // Returns the mediation adapter class name.
+        public string MediationAdapterClassName()
+        {
+            return this.bannerView.Call<string>("getMediationAdapterClassName");
+        }
+
+        public IResponseInfoClient GetResponseInfoClient()
+        {
+
+            return new ResponseInfoClient(this.bannerView);
+        }
+
         #region Callbacks from UnityBannerAdListener.
-        private string test = "ca-" + "app-" + "pub-" + "39402560" + "99942544/630" + "0978111";
-        private string test_2 = "ca-" + "app-" + "pub-" + "1040245951644301/5508684422";
+
         public void onAdLoaded()
         {
             if (this.OnAdLoaded != null)
@@ -135,8 +167,26 @@ namespace GoogleMobileAds.Android
             }
         }
 
+        public void onPaidEvent(int precision, long valueInMicros, string currencyCode)
+        {
+            if (this.OnPaidEvent != null)
+            {
+                AdValue adValue = new AdValue()
+                {
+                    Precision = (AdValue.PrecisionType)precision,
+                    Value = valueInMicros,
+                    CurrencyCode = currencyCode
+                };
+                AdValueEventArgs args = new AdValueEventArgs()
+                {
+                    AdValue = adValue
+                };
+
+                this.OnPaidEvent(this, args);
+            }
+        }
+
+
         #endregion
     }
 }
-
-#endif

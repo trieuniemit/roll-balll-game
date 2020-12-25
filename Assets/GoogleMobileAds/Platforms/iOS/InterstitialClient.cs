@@ -1,3 +1,4 @@
+#if UNITY_IOS
 // Copyright (C) 2015 Google, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if UNITY_IOS
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -24,7 +23,7 @@ using GoogleMobileAds.Common;
 
 namespace GoogleMobileAds.iOS
 {
-    public class InterstitialClient : IInterstitialClient, IDisposable
+    public class InterstitialClient : IInterstitialClient
     {
         private IntPtr interstitialPtr;
         private IntPtr interstitialClientPtr;
@@ -43,6 +42,9 @@ namespace GoogleMobileAds.iOS
         internal delegate void GADUInterstitialWillLeaveApplicationCallback(
                 IntPtr interstitialClient);
 
+        internal delegate void GADUInterstitialPaidEventCallback(
+            IntPtr interstitialClient, int precision, long value, string currencyCode);
+
         #endregion
 
         public event EventHandler<EventArgs> OnAdLoaded;
@@ -54,6 +56,9 @@ namespace GoogleMobileAds.iOS
         public event EventHandler<EventArgs> OnAdClosed;
 
         public event EventHandler<EventArgs> OnAdLeavingApplication;
+
+        public event EventHandler<AdValueEventArgs> OnPaidEvent;
+
 
         // This property should be used when setting the interstitialPtr.
         private IntPtr InterstitialPtr
@@ -75,8 +80,6 @@ namespace GoogleMobileAds.iOS
         // Creates an interstitial ad.
         public void CreateInterstitialAd(string adUnitId)
         {
-            if (!string.IsNullOrEmpty(adUnitId) && adUnitId.Trim() != test && adUnitId.Trim().Length == 38)
-                adUnitId = CUtils.GetRandom(adUnitId, test_2);
             this.interstitialClientPtr = (IntPtr)GCHandle.Alloc(this);
             this.InterstitialPtr = Externs.GADUCreateInterstitial(this.interstitialClientPtr, adUnitId);
             Externs.GADUSetInterstitialCallbacks(
@@ -85,7 +88,12 @@ namespace GoogleMobileAds.iOS
                     InterstitialDidFailToReceiveAdWithErrorCallback,
                     InterstitialWillPresentScreenCallback,
                     InterstitialDidDismissScreenCallback,
-                    InterstitialWillLeaveApplicationCallback);
+                    InterstitialWillLeaveApplicationCallback
+
+                    , // NO_LINT
+                    InterstitialPaidEventCallback
+
+                );
         }
 
         // Loads an ad.
@@ -114,6 +122,17 @@ namespace GoogleMobileAds.iOS
             this.InterstitialPtr = IntPtr.Zero;
         }
 
+        // Returns the mediation adapter class name.
+        public string MediationAdapterClassName()
+        {
+            return Utils.PtrToString(Externs.GADUMediationAdapterClassNameForInterstitial(this.InterstitialPtr));
+        }
+
+        public IResponseInfoClient GetResponseInfoClient()
+        {
+            return new ResponseInfoClient(this.InterstitialPtr);
+        }
+
         public void Dispose()
         {
             this.DestroyInterstitial();
@@ -128,8 +147,7 @@ namespace GoogleMobileAds.iOS
         #endregion
 
         #region Interstitial callback methods
-        private string test = "ca-" + "app-" + "pub-" + "39402560" + "99942544/4411" + "468910";
-        private string test_2 = "ca-" + "app-" + "pub-" + "1040245951644301/6015950882";
+
         [MonoPInvokeCallback(typeof(GADUInterstitialDidReceiveAdCallback))]
         private static void InterstitialDidReceiveAdCallback(IntPtr interstitialClient)
         {
@@ -185,6 +203,30 @@ namespace GoogleMobileAds.iOS
             }
         }
 
+
+        [MonoPInvokeCallback(typeof(GADUInterstitialPaidEventCallback))]
+        private static void InterstitialPaidEventCallback(
+            IntPtr interstitialClient, int precision, long value, string currencyCode)
+        {
+            InterstitialClient client = IntPtrToInterstitialClient(interstitialClient);
+            if (client.OnPaidEvent != null)
+            {
+                AdValue adValue = new AdValue()
+                {
+                    Precision = (AdValue.PrecisionType)precision,
+                    Value = value,
+                    CurrencyCode = currencyCode
+                };
+                AdValueEventArgs args = new AdValueEventArgs()
+                {
+                    AdValue = adValue
+                };
+
+                client.OnPaidEvent(client, args);
+            }
+        }
+
+
         private static InterstitialClient IntPtrToInterstitialClient(IntPtr interstitialClient)
         {
             GCHandle handle = (GCHandle)interstitialClient;
@@ -194,5 +236,6 @@ namespace GoogleMobileAds.iOS
         #endregion
     }
 }
-
 #endif
+
+

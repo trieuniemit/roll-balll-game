@@ -8,12 +8,12 @@ public class RewardedVideoCallBack : MonoBehaviour {
 
     private void Start()
     {
-#if UNITY_ANDROID || UNITY_IOS
-        if (AdmobController.instance.rewardBasedVideo != null)
-        {
-            AdmobController.instance.rewardBasedVideo.OnAdRewarded += HandleRewardBasedVideoRewarded;
-        }
-#endif
+        #if UNITY_ANDROID || UNITY_IOS
+            if (AdmobController.instance.rewardBasedVideo != null)
+            {
+                AdmobController.instance.rewardBasedVideo.OnAdRewarded += HandleRewardBasedVideoRewarded;
+            }
+        #endif
     }
 
     private const string ACTION_NAME = "rewarded_video";
@@ -26,11 +26,11 @@ public class RewardedVideoCallBack : MonoBehaviour {
 
     private void OnDestroy()
     {
-#if UNITY_ANDROID || UNITY_IOS
-        if (AdmobController.instance.rewardBasedVideo != null)
-        {
-            AdmobController.instance.rewardBasedVideo.OnAdRewarded -= HandleRewardBasedVideoRewarded;
-        }
-#endif
+        #if UNITY_ANDROID || UNITY_IOS
+            if (AdmobController.instance.rewardBasedVideo != null)
+            {
+                AdmobController.instance.rewardBasedVideo.OnAdRewarded -= HandleRewardBasedVideoRewarded;
+            }
+        #endif
     }
 }

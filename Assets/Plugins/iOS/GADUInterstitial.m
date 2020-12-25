@@ -2,11 +2,12 @@
 
 #import "GADUInterstitial.h"
 
-@import CoreGraphics;
-@import UIKit;
+#import <CoreGraphics/CoreGraphics.h>
+#import <UIKit/UIKit.h>
 
 #import "GADUPluginUtil.h"
 #import "UnityAppController.h"
+#import "UnityInterface.h"
 
 @interface GADUInterstitial () <GADInterstitialDelegate>
 @end
@@ -20,6 +21,18 @@
     _interstitialClient = interstitialClient;
     _interstitial = [[GADInterstitial alloc] initWithAdUnitID:adUnitID];
     _interstitial.delegate = self;
+
+    __weak GADUInterstitial *weakSelf = self;
+    _interstitial.paidEventHandler = ^void(GADAdValue *_Nonnull adValue) {
+      GADUInterstitial *strongSelf = weakSelf;
+      if (strongSelf.paidEventCallback) {
+        int64_t valueInMicros =
+            [adValue.value decimalNumberByMultiplyingByPowerOf10:6].longLongValue;
+        strongSelf.paidEventCallback(
+            strongSelf.interstitialClient, (int)adValue.precision, valueInMicros,
+            [adValue.currencyCode cStringUsingEncoding:NSUTF8StringEncoding]);
+      }
+    };
   }
   return self;
 }
@@ -45,6 +58,14 @@
   }
 }
 
+- (NSString *)mediationAdapterClassName {
+  return self.interstitial.responseInfo.adNetworkClassName;
+}
+
+- (GADResponseInfo *)responseInfo {
+  return self.interstitial.responseInfo;
+}
+
 #pragma mark GADInterstitialDelegate implementation
 
 - (void)interstitialDidReceiveAd:(GADInterstitial *)ad {
@@ -55,13 +76,17 @@
 - (void)interstitial:(GADInterstitial *)ad didFailToReceiveAdWithError:(GADRequestError *)error {
   if (self.adFailedCallback) {
     NSString *errorMsg = [NSString
-        stringWithFormat:@"Failed to receive ad with error: %@", [error localizedFailureReason]];
+        stringWithFormat:@"Failed to receive ad with error: %@", [error localizedDescription]];
     self.adFailedCallback(self.interstitialClient,
                           [errorMsg cStringUsingEncoding:NSUTF8StringEncoding]);
   }
 }
 
 - (void)interstitialWillPresentScreen:(GADInterstitial *)ad {
+  if ([GADUPluginUtil pauseOnBackground]) {
+    UnityPause(YES);
+  }
+
   if (self.willPresentCallback) {
     self.willPresentCallback(self.interstitialClient);
   }
@@ -72,6 +97,17 @@
 }
 
 - (void)interstitialDidDismissScreen:(GADInterstitial *)ad {
+  extern bool _didResignActive;
+  if(_didResignActive) {
+    // We are in the middle of the shutdown sequence, and at this point unity runtime is already destroyed.
+    // We shall not call unity API, and definitely not script callbacks, so nothing to do here
+    return;
+  }
+
+  if (UnityIsPaused()) {
+    UnityPause(NO);
+  }
+
   if (self.didDismissCallback) {
     self.didDismissCallback(self.interstitialClient);
   }

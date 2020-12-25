@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System;
-using GoogleMobileAds;
 using GoogleMobileAds.Api;
 
 public class AdmobController : MonoBehaviour
@@ -49,39 +48,38 @@ public class AdmobController : MonoBehaviour
         // Get singleton reward based video ad reference.
         this.rewardBasedVideo = RewardBasedVideoAd.Instance;
 
-        // RewardBasedVideoAd is a singleton, so handlers should only be registered once.
-        this.rewardBasedVideo.OnAdLoaded += this.HandleRewardBasedVideoLoaded;
-        this.rewardBasedVideo.OnAdFailedToLoad += this.HandleRewardBasedVideoFailedToLoad;
-        this.rewardBasedVideo.OnAdOpening += this.HandleRewardBasedVideoOpened;
-        this.rewardBasedVideo.OnAdStarted += this.HandleRewardBasedVideoStarted;
-        this.rewardBasedVideo.OnAdRewarded += this.HandleRewardBasedVideoRewarded;
-        this.rewardBasedVideo.OnAdClosed += this.HandleRewardBasedVideoClosed;
-        this.rewardBasedVideo.OnAdLeavingApplication += this.HandleRewardBasedVideoLeftApplication;
+        // RewardBasedVideoAd is a singleton, so rs should only be registered once.
+        this.rewardBasedVideo.OnAdLoaded += this.RewardBasedVideoLoaded;
+        this.rewardBasedVideo.OnAdFailedToLoad += this.RewardBasedVideoFailedToLoad;
+        this.rewardBasedVideo.OnAdOpening += this.RewardBasedVideoOpened;
+        this.rewardBasedVideo.OnAdStarted += this.RewardBasedVideoStarted;
+        this.rewardBasedVideo.OnAdRewarded += this.RewardBasedVideoRewarded;
+        this.rewardBasedVideo.OnAdClosed += this.RewardBasedVideoClosed;
+        this.rewardBasedVideo.OnAdLeavingApplication += this.RewardBasedVideoLeftApplication;
     }
 
     public void RequestBanner()
     {
         // These ad units are configured to always serve test ads.
-#if UNITY_EDITOR
-        string adUnitId = "unused";
-#elif UNITY_ANDROID
-        string adUnitId = androidBanner.Trim();
-#elif UNITY_IPHONE
-        string adUnitId = iosBanner.Trim();
-#else
-        string adUnitId = "unexpected_platform";
-#endif
+        #if UNITY_EDITOR
+            string adUnitId = "ca-app-pub-3940256099942544/6300978111"; // test
+        #elif UNITY_ANDROID
+            string adUnitId = androidBanner.Trim();
+        #elif UNITY_IPHONE
+            string adUnitId = iosBanner.Trim();
+        #else
+            string adUnitId = "unexpected_platform";
+        #endif
 
         // Create a 320x50 banner at the top of the screen.
         this.bannerView = new BannerView(adUnitId, AdSize.SmartBanner, AdPosition.Bottom);
 
         // Register for ad events.
-        this.bannerView.OnAdLoaded += this.HandleAdLoaded;
-        this.bannerView.OnAdFailedToLoad += this.HandleAdFailedToLoad;
-        this.bannerView.OnAdOpening += this.HandleAdOpened;
-        this.bannerView.OnAdClosed += this.HandleAdClosed;
-        this.bannerView.OnAdLeavingApplication += this.HandleAdLeftApplication;
-
+        this.bannerView.OnAdLoaded += this.AdLoaded;
+        this.bannerView.OnAdFailedToLoad += this.AdFailedToLoad;
+        this.bannerView.OnAdOpening += this.AdOpened;
+        this.bannerView.OnAdClosed += this.AdClosed;
+        this.bannerView.OnAdLeavingApplication += this.AdLeftApplication;
         // Load a banner ad.
         this.bannerView.LoadAd(this.CreateAdRequest());
     }
@@ -89,25 +87,25 @@ public class AdmobController : MonoBehaviour
     public void RequestInterstitial()
     {
         // These ad units are configured to always serve test ads.
-#if UNITY_EDITOR
-        string adUnitId = "unused";
-#elif UNITY_ANDROID
-        string adUnitId = androidInterstitial.Trim();
-#elif UNITY_IPHONE
-        string adUnitId = iosInterstitial.Trim();
-#else
-        string adUnitId = "unexpected_platform";
-#endif
+        #if UNITY_EDITOR
+            string adUnitId = "ca-app-pub-3940256099942544/1033173712"; // test
+        #elif UNITY_ANDROID
+            string adUnitId = androidInterstitial.Trim();
+        #elif UNITY_IPHONE
+            string adUnitId = iosInterstitial.Trim();
+        #else
+            string adUnitId = "unexpected_platform";
+        #endif
 
         // Create an interstitial.
         this.interstitial = new InterstitialAd(adUnitId);
 
         // Register for ad events.
-        this.interstitial.OnAdLoaded += this.HandleInterstitialLoaded;
-        this.interstitial.OnAdFailedToLoad += this.HandleInterstitialFailedToLoad;
-        this.interstitial.OnAdOpening += this.HandleInterstitialOpened;
-        this.interstitial.OnAdClosed += this.HandleInterstitialClosed;
-        this.interstitial.OnAdLeavingApplication += this.HandleInterstitialLeftApplication;
+        this.interstitial.OnAdLoaded += this.InterstitialLoaded;
+        this.interstitial.OnAdFailedToLoad += this.InterstitialFailedToLoad;
+        this.interstitial.OnAdOpening += this.InterstitialOpened;
+        this.interstitial.OnAdClosed += this.InterstitialClosed;
+        this.interstitial.OnAdLeavingApplication += this.InterstitialLeftApplication;
 
         // Load an interstitial ad.
         this.interstitial.LoadAd(this.CreateAdRequest());
@@ -115,15 +113,15 @@ public class AdmobController : MonoBehaviour
 
     public void RequestRewardBasedVideo()
     {
-#if UNITY_EDITOR
-        string adUnitId = "unused";
-#elif UNITY_ANDROID
-        string adUnitId = androidRewardedVideo.Trim();
-#elif UNITY_IPHONE
-        string adUnitId = iosRewardedVideo.Trim();
-#else
-        string adUnitId = "unexpected_platform";
-#endif
+        #if UNITY_EDITOR
+            string adUnitId = "ca-app-pub-3940256099942544/5224354917"; //test
+        #elif UNITY_ANDROID
+            string adUnitId = androidRewardedVideo.Trim();
+        #elif UNITY_IPHONE
+            string adUnitId = iosRewardedVideo.Trim();
+        #else
+            string adUnitId = "unexpected_platform";
+        #endif
 
         this.rewardBasedVideo.LoadAd(this.CreateAdRequest(), adUnitId);
     }
@@ -182,110 +180,108 @@ public class AdmobController : MonoBehaviour
         }
         else
         {
-            MonoBehaviour.print("Reward based video ad is not ready yet");
+            Debug.Log("Ads: Reward based video ad is not ready yet");
         }
     }
 
-    #region Banner callback handlers
+    #region Banner callback rs
 
-    public void HandleAdLoaded(object sender, EventArgs args)
+    public void AdLoaded(object sender, EventArgs args)
     {
         //HideBanner();
-        print("HandleAdLoaded event received.");
+        Debug.Log("Ads: AdLoaded event received.");
     }
 
-    public void HandleAdFailedToLoad(object sender, AdFailedToLoadEventArgs args)
+    public void AdFailedToLoad(object sender, AdFailedToLoadEventArgs args)
     {
-        print("HandleFailedToReceiveAd event received with message: " + args.Message);
+        Debug.Log("Ads: FailedToReceiveAd event received with message: " + args.Message);
     }
 
-    public void HandleAdOpened(object sender, EventArgs args)
+    public void AdOpened(object sender, EventArgs args)
     {
-        print("HandleAdOpened event received");
+        Debug.Log("Ads: AdOpened event received");
     }
 
-    public void HandleAdClosed(object sender, EventArgs args)
+    public void AdClosed(object sender, EventArgs args)
     {
-        print("HandleAdClosed event received");
+        Debug.Log("Ads: AdClosed event received");
     }
 
-    public void HandleAdLeftApplication(object sender, EventArgs args)
+    public void AdLeftApplication(object sender, EventArgs args)
     {
-        print("HandleAdLeftApplication event received");
+        Debug.Log("Ads: AdLeftApplication event received");
     }
 
     #endregion
 
-    #region Interstitial callback handlers
+    #region Interstitial callback rs
 
-    public void HandleInterstitialLoaded(object sender, EventArgs args)
+    public void InterstitialLoaded(object sender, EventArgs args)
     {
-        print("HandleInterstitialLoaded event received.");
+        Debug.Log("Ads: InterstitialLoaded event received.");
     }
 
-    public void HandleInterstitialFailedToLoad(object sender, AdFailedToLoadEventArgs args)
+    public void InterstitialFailedToLoad(object sender, AdFailedToLoadEventArgs args)
     {
-        print("HandleInterstitialFailedToLoad event received with message: " + args.Message);
+        Debug.Log("Ads: InterstitialFailedToLoad event received with message: " + args.Message);
     }
 
-    public void HandleInterstitialOpened(object sender, EventArgs args)
+    public void InterstitialOpened(object sender, EventArgs args)
     {
-        print("HandleInterstitialOpened event received");
+        Debug.Log("Ads: InterstitialOpened event received");
     }
 
-    public void HandleInterstitialClosed(object sender, EventArgs args)
+    public void InterstitialClosed(object sender, EventArgs args)
     {
-        print("HandleInterstitialClosed event received");
+        Debug.Log("Ads: InterstitialClosed event received");
         RequestInterstitial();
     }
 
-    public void HandleInterstitialLeftApplication(object sender, EventArgs args)
+    public void InterstitialLeftApplication(object sender, EventArgs args)
     {
-        print("HandleInterstitialLeftApplication event received");
+        Debug.Log("Ads: InterstitialLeftApplication event received ---------");
     }
 
     #endregion
 
-    #region RewardBasedVideo callback handlers
+    #region RewardBasedVideo callback rs
 
-    public void HandleRewardBasedVideoLoaded(object sender, EventArgs args)
+    public void RewardBasedVideoLoaded(object sender, EventArgs args)
     {
-        MonoBehaviour.print("HandleRewardBasedVideoLoaded event received");
+        Debug.Log("Ads: RewardBasedVideoLoaded event received");
     }
 
-    public void HandleRewardBasedVideoFailedToLoad(object sender, AdFailedToLoadEventArgs args)
+    public void RewardBasedVideoFailedToLoad(object sender, AdFailedToLoadEventArgs args)
     {
-        MonoBehaviour.print(
-            "HandleRewardBasedVideoFailedToLoad event received with message: " + args.Message);
+        Debug.Log("Ads: RewardBasedVideoFailedToLoad event received with message: " + args.Message);
     }
 
-    public void HandleRewardBasedVideoOpened(object sender, EventArgs args)
+    public void RewardBasedVideoOpened(object sender, EventArgs args)
     {
-        MonoBehaviour.print("HandleRewardBasedVideoOpened event received");
+        Debug.Log("Ads: RewardBasedVideoOpened event received");
     }
 
-    public void HandleRewardBasedVideoStarted(object sender, EventArgs args)
+    public void RewardBasedVideoStarted(object sender, EventArgs args)
     {
-        MonoBehaviour.print("HandleRewardBasedVideoStarted event received");
+        Debug.Log("Ads: RewardBasedVideoStarted event received");
     }
 
-    public void HandleRewardBasedVideoClosed(object sender, EventArgs args)
+    public void RewardBasedVideoClosed(object sender, EventArgs args)
     {
         RequestRewardBasedVideo();
-        MonoBehaviour.print("HandleRewardBasedVideoClosed event received");
+        Debug.Log("Ads: RewardBasedVideoClosed event received");
     }
 
-    public void HandleRewardBasedVideoRewarded(object sender, Reward args)
+    public void RewardBasedVideoRewarded(object sender, Reward args)
     {
         string type = args.Type;
         double amount = args.Amount;
-        MonoBehaviour.print(
-            "HandleRewardBasedVideoRewarded event received for " + amount.ToString() + " " + type);
+        Debug.Log("Ads: RewardBasedVideoRewarded event received for " + amount.ToString() + " " + type);
     }
 
-    public void HandleRewardBasedVideoLeftApplication(object sender, EventArgs args)
+    public void RewardBasedVideoLeftApplication(object sender, EventArgs args)
     {
-        MonoBehaviour.print("HandleRewardBasedVideoLeftApplication event received");
+        Debug.Log("Ads: RewardBasedVideoLeftApplication event received");
     }
 
     #endregion

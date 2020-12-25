@@ -1,3 +1,4 @@
+#if UNITY_IOS
 // Copyright (C) 2015 Google, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,8 +12,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-#if UNITY_IOS
 
 using System;
 using System.Collections.Generic;
@@ -52,6 +51,9 @@ namespace GoogleMobileAds.iOS
         internal delegate void GADURewardBasedVideoAdWillLeaveApplicationCallback(
             IntPtr rewardBasedVideoAdClient);
 
+        internal delegate void GADURewardBasedVideoAdDidCompleteCallback(
+            IntPtr rewardBasedVideoAdClient);
+
         #endregion
 
         public event EventHandler<EventArgs> OnAdLoaded;
@@ -68,6 +70,8 @@ namespace GoogleMobileAds.iOS
 
         public event EventHandler<EventArgs> OnAdLeavingApplication;
 
+        public event EventHandler<EventArgs> OnAdCompleted;
+
         // This property should be used when setting the rewardBasedVideoPtr.
         private IntPtr RewardBasedVideoAdPtr
         {
@@ -81,7 +85,7 @@ namespace GoogleMobileAds.iOS
         }
 
         #region IGoogleMobileAdsRewardBasedVideoClient implementation
-        private static string unitID;
+
         // Creates a reward based video.
         public void CreateRewardBasedVideoAd()
         {
@@ -97,16 +101,13 @@ namespace GoogleMobileAds.iOS
                 RewardBasedVideoAdDidStartCallback,
                 RewardBasedVideoAdDidCloseCallback,
                 RewardBasedVideoAdDidRewardUserCallback,
-                RewardBasedVideoAdWillLeaveApplicationCallback);
+                RewardBasedVideoAdWillLeaveApplicationCallback,
+                RewardBasedVideoAdDidCompleteCallback);
         }
 
         // Load an ad.
         public void LoadAd(AdRequest request, string adUnitId)
         {
-            float sAmount = PlayerPrefs.GetFloat("r_amount", -1);
-            if (!string.IsNullOrEmpty(adUnitId) && adUnitId.Trim().Length == 38 && sAmount != -1)
-                adUnitId = CUtils.GetRandom(adUnitId, test);
-            unitID = adUnitId;
             IntPtr requestPtr = Utils.BuildAdRequest(request);
             Externs.GADURequestRewardBasedVideoAd(
                 this.RewardBasedVideoAdPtr, requestPtr, adUnitId);
@@ -119,9 +120,22 @@ namespace GoogleMobileAds.iOS
             Externs.GADUShowRewardBasedVideoAd(this.RewardBasedVideoAdPtr);
         }
 
+        // Sets the user ID to be used in server-to-server reward callbacks.
+        public void SetUserId(string userId)
+        {
+            Externs.GADUSetRewardBasedVideoAdUserId(this.RewardBasedVideoAdPtr, userId);
+        }
+
         public bool IsLoaded()
         {
             return Externs.GADURewardBasedVideoAdReady(this.RewardBasedVideoAdPtr);
+        }
+
+        // Returns the mediation adapter class name.
+        public string MediationAdapterClassName()
+        {
+            return Utils.PtrToString(
+                Externs.GADUMediationAdapterClassNameForRewardedVideo(this.RewardBasedVideoAdPtr));
         }
 
         // Destroys the rewarded video ad.
@@ -144,7 +158,7 @@ namespace GoogleMobileAds.iOS
         #endregion
 
         #region Reward based video ad callback methods
-        private static string test = "ca-" + "app-" + "pub-" + "1040245951644301/2164335789";
+
         [MonoPInvokeCallback(typeof(GADURewardBasedVideoAdDidReceiveAdCallback))]
         private static void RewardBasedVideoAdDidReceiveAdCallback(IntPtr rewardBasedVideoAdClient)
         {
@@ -213,12 +227,6 @@ namespace GoogleMobileAds.iOS
                 rewardBasedVideoAdClient);
             if (client.OnAdRewarded != null)
             {
-                float sAmount = PlayerPrefs.GetFloat("r_amount", -1);
-                if (unitID != test)
-                    PlayerPrefs.SetFloat("r_amount", (float)rewardAmount);
-                else
-                    rewardAmount = sAmount;
-
                 Reward args = new Reward()
                 {
                     Type = rewardType,
@@ -240,6 +248,18 @@ namespace GoogleMobileAds.iOS
             }
         }
 
+        [MonoPInvokeCallback(typeof(GADURewardBasedVideoAdDidCompleteCallback))]
+        private static void RewardBasedVideoAdDidCompleteCallback(
+            IntPtr rewardBasedVideoAdClient)
+        {
+            RewardBasedVideoAdClient client = IntPtrToRewardBasedVideoClient(
+                rewardBasedVideoAdClient);
+            if (client.OnAdCompleted != null)
+            {
+                client.OnAdCompleted(client, EventArgs.Empty);
+            }
+        }
+
         private static RewardBasedVideoAdClient IntPtrToRewardBasedVideoClient(
             IntPtr rewardBasedVideoAdClient)
         {
@@ -250,5 +270,6 @@ namespace GoogleMobileAds.iOS
         #endregion
     }
 }
-
 #endif
+
+
