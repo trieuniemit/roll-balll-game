@@ -131,7 +131,7 @@ public class AdmobController : MonoBehaviour
     {
         return new AdRequest.Builder()
                 .AddTestDevice(AdRequest.TestDeviceSimulator)
-                .AddTestDevice("0123456789ABCDEF0123456789ABCDEF")
+                .AddTestDevice("04BF0AFEC9ABA620692118919F24A681")
                 .AddKeyword("game")
                 .TagForChildDirectedTreatment(false)
                 .AddExtra("color_bg", "9B30FF")
