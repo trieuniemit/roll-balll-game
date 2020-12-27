@@ -238,7 +238,7 @@ public class GameManager : MonoBehaviour
         if (hintObject != null)
         {
             GameObject txt = hintObject.transform.Find("Text").gameObject;
-            txt.GetComponent<Text>().text = "Hint (" + Prefs.hintCount + ")";
+            txt.GetComponent<Text>().text = Prefs.hintCount.ToString();
         }
     }
 
